@@ -220,7 +220,7 @@ struct selfadjoint_product_impl<Lhs,LhsMode,false,Rhs,0,true>
       Index size = rhs.size();
       EIGEN_DENSE_STORAGE_CTOR_PLUGIN
       #endif
-      Map<typename ActualRhsTypeCleaned::PlainObject>(actualRhsPtr, rhs.size()) = rhs;
+      //Map<typename ActualRhsTypeCleaned::PlainObject>(actualRhsPtr, rhs.size()) = rhs;
     }
       
       

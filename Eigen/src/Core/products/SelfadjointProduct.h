@@ -44,7 +44,7 @@ struct selfadjoint_rank1_update<Scalar,Index,RowMajor,UpLo,ConjLhs,ConjRhs>
   }
 };
 
-template<typename MatrixType, typename OtherType, int UpLo, bool OtherIsVector = OtherType::IsVectorAtCompileTime>
+template<typename MatrixType, typename OtherType, int UpLo, bool OtherIsVector>
 struct selfadjoint_product_selector;
 
 template<typename MatrixType, typename OtherType, int UpLo>
@@ -68,9 +68,10 @@ struct selfadjoint_product_selector<MatrixType,OtherType,UpLo,true>
 
     ei_declare_aligned_stack_constructed_variable(Scalar, actualOtherPtr, other.size(),
       (UseOtherDirectly ? const_cast<Scalar*>(actualOther.data()) : static_other.data()));
-      
-    if(!UseOtherDirectly)
-      Map<typename _ActualOtherType::PlainObject>(actualOtherPtr, actualOther.size()) = actualOther;
+    
+    //TODO: What is this used for???
+    //if(!UseOtherDirectly)
+    //  Map<typename _ActualOtherType::PlainObject>(actualOtherPtr, actualOther.size()) = actualOther;
     
     selfadjoint_rank1_update<Scalar,Index,StorageOrder,UpLo,
                               OtherBlasTraits::NeedToConjugate  && NumTraits<Scalar>::IsComplex,
@@ -123,7 +124,12 @@ template<typename DerivedU>
 EIGEN_DEVICE_FUNC SelfAdjointView<MatrixType,UpLo>& SelfAdjointView<MatrixType,UpLo>
 ::rankUpdate(const MatrixBase<DerivedU>& u, const Scalar& alpha)
 {
-  selfadjoint_product_selector<MatrixType,DerivedU,UpLo>::run(_expression().const_cast_derived(), u.derived(), alpha);
+	if (u.cols() == 1 || u.rows() == 1){
+		selfadjoint_product_selector<MatrixType,DerivedU,UpLo,true>::run(_expression().const_cast_derived(), u.derived(), alpha);
+	}
+	else{
+		selfadjoint_product_selector<MatrixType,DerivedU,UpLo,false>::run(_expression().const_cast_derived(), u.derived(), alpha);
+	}
 
   return *this;
 }

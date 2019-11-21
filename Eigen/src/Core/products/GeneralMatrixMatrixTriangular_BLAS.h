@@ -68,8 +68,8 @@ struct general_matrix_matrix_triangular_product<Index,Scalar,LhsStorageOrder,Con
 EIGEN_BLAS_RANKUPDATE_SPECIALIZE(double)
 EIGEN_BLAS_RANKUPDATE_SPECIALIZE(float)
 // TODO handle complex cases
-// EIGEN_BLAS_RANKUPDATE_SPECIALIZE(dcomplex)
-// EIGEN_BLAS_RANKUPDATE_SPECIALIZE(scomplex)
+EIGEN_BLAS_RANKUPDATE_SPECIALIZE(dcomplex)
+EIGEN_BLAS_RANKUPDATE_SPECIALIZE(scomplex)
 
 // SYRK for float/double
 #define EIGEN_BLAS_RANKUPDATE_R(EIGTYPE, BLASTYPE, BLASFUNC) \
@@ -128,14 +128,16 @@ struct general_matrix_matrix_rankupdate<Index,EIGTYPE,AStorageOrder,ConjugateA,C
 #ifdef EIGEN_USE_MKL
 EIGEN_BLAS_RANKUPDATE_R(double, double, dsyrk)
 EIGEN_BLAS_RANKUPDATE_R(float,  float,  ssyrk)
+EIGEN_BLAS_RANKUPDATE_C(dcomplex, MKL_Complex16, double, zherk)
+EIGEN_BLAS_RANKUPDATE_C(scomplex, MKL_Complex8,  float, cherk)
 #else
 EIGEN_BLAS_RANKUPDATE_R(double, double, dsyrk_)
 EIGEN_BLAS_RANKUPDATE_R(float,  float,  ssyrk_)
+EIGEN_BLAS_RANKUPDATE_C(dcomplex, dcomplex, double, zherk_)
+EIGEN_BLAS_RANKUPDATE_C(scomplex, scomplex,  float, cherk_)
 #endif
 
 // TODO hanlde complex cases
-// EIGEN_BLAS_RANKUPDATE_C(dcomplex, double, double, zherk_)
-// EIGEN_BLAS_RANKUPDATE_C(scomplex, float,  float, cherk_)
 
 
 } // end namespace internal

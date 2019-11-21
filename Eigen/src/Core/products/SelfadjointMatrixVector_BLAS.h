@@ -53,17 +53,9 @@ struct selfadjoint_matrix_vector_product<Scalar,Index,StorageOrder,UpLo,Conjugat
 static void run( \
   Index size, const Scalar*  lhs, Index lhsStride, \
   const Scalar* _rhs, Scalar* res, Scalar alpha) { \
-    enum {\
-      IsColMajor = StorageOrder==ColMajor \
-    }; \
-    if (IsColMajor == ConjugateLhs) {\
-      selfadjoint_matrix_vector_product<Scalar,Index,StorageOrder,UpLo,ConjugateLhs,ConjugateRhs,BuiltIn>::run( \
-        size, lhs, lhsStride, _rhs, res, alpha);  \
-    } else {\
       selfadjoint_matrix_vector_product_symv<Scalar,Index,StorageOrder,UpLo,ConjugateLhs,ConjugateRhs>::run( \
         size, lhs, lhsStride, _rhs, res, alpha);  \
     }\
-  } \
 }; \
 
 EIGEN_BLAS_SYMV_SPECIALIZE(double)
