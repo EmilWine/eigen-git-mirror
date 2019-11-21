@@ -797,7 +797,11 @@ struct generic_product_impl<Lhs,Rhs,SelfAdjointShape,DenseShape,ProductTag>
   static EIGEN_DEVICE_FUNC
   void scaleAndAddTo(Dest& dst, const Lhs& lhs, const Rhs& rhs, const Scalar& alpha)
   {
-    selfadjoint_product_impl<typename Lhs::MatrixType,Lhs::Mode,false,Rhs,0,Rhs::IsVectorAtCompileTime>::run(dst, lhs.nestedExpression(), rhs, alpha);
+	  if (rhs.cols() ==1 || rhs.rows() == 1){
+	    selfadjoint_product_impl<typename Lhs::MatrixType,Lhs::Mode,false,Rhs,0,true>::run(dst, lhs.nestedExpression(), rhs, alpha);
+	  }
+	  else
+	    selfadjoint_product_impl<typename Lhs::MatrixType,Lhs::Mode,false,Rhs,0,false>::run(dst, lhs.nestedExpression(), rhs, alpha);
   }
 };
 
