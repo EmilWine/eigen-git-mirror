@@ -2,6 +2,7 @@
 #define EIGEN_MATRIX_SCALE_H
 
 namespace Eigen { 
+namespace internal {
 
 template<typename Scalar, typename Index>
 struct matrix_scale_add_imp;
@@ -18,22 +19,13 @@ struct matrix_scale_add_imp
 	}
 };
 
-//template<typename Index>
-//struct matrix_scale_add_imp<std::complex<float>,Index>
-//{
-//	typedef std::complex<float> Scalar;
-//	static void run(Index size, Scalar *dest, const Scalar *in, const Scalar alpha){
-//		BlasIndex n = internal::convert_index<BlasIndex>(size), incx=1, incy=1;
-//		caxpy(&n, (const MKL_Complex8*)&numext::real_ref(alpha) ,(const MKL_Complex8*) in, &incx, (MKL_Complex8*)dest, &incy);
-//	}
-//};
-
+}
 template<typename MatrixType>
 struct matrix_scale_add
 {
   static void run(MatrixType& dest, const MatrixType& x, const typename MatrixType::Scalar& alpha)
   {
-	matrix_scale_add_imp<typename MatrixType::Scalar, Index>::run(dest.size(),dest.data(),x.data(),alpha);
+	  internal::matrix_scale_add_imp<typename MatrixType::Scalar, Index>::run(dest.size(),dest.data(),x.data(),alpha);
   }
 };
 }
