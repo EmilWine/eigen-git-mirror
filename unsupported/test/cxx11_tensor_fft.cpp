@@ -9,6 +9,7 @@
 
 #include "main.h"
 #include <Eigen/CXX11/Tensor>
+#include <bench/BenchTimer.h>
 
 using Eigen::Tensor;
 
@@ -38,7 +39,8 @@ static void test_fft_2D_golden() {
 
   std::complex<float> c_offset = std::complex<float>(1.0, 1.0);
 
-  if (DataLayout == ColMajor) {
+  if (DataLayout == ColMajor) 
+  {
     VERIFY_IS_APPROX(output(0) + c_offset, output_golden[0] + c_offset);
     VERIFY_IS_APPROX(output(1) + c_offset, output_golden[1] + c_offset);
     VERIFY_IS_APPROX(output(2) + c_offset, output_golden[2] + c_offset);
@@ -113,6 +115,38 @@ static void test_fft_complex_input_golden() {
   }
 }
 
+
+template <size_t Repeats,size_t WindowSize, int DataLayout, typename RealScalar, bool isComplexInput, int FFTResultType, int FFTDirection,int TensorRank>
+static void bench_fft_large_input() {
+	Eigen::DSizes<ptrdiff_t, TensorRank> dimensions;
+	ptrdiff_t total_size = 1;
+	for (int i = 0; i < TensorRank-1; ++i) {
+		dimensions[i] = 3;
+		total_size *= dimensions[i];
+	}
+	dimensions[TensorRank-1] = WindowSize;
+	total_size *= dimensions[TensorRank-1];
+	const DSizes<ptrdiff_t, TensorRank> arr = dimensions;
+
+	typedef typename internal::conditional<isComplexInput == true, std::complex<RealScalar>, RealScalar>::type InputScalar;
+	typedef typename internal::conditional<FFTResultType == Eigen::BothParts, std::complex<RealScalar>, RealScalar>::type OutputScalar;
+	Tensor<InputScalar, TensorRank , DataLayout> input;
+	Tensor<OutputScalar, TensorRank , DataLayout> output;
+
+	input.resize(arr);
+	input.setRandom();
+
+	BenchTimer timerFFT;
+	timerFFT.reset();
+	timerFFT.start();
+	array<ptrdiff_t, 1> fft;
+	fft[0] = 0;
+	for (size_t i = 0; i < Repeats; i++)
+		output = input.template fft<FFTResultType, FFTDirection>(fft);
+	timerFFT.stop();
+	std::cout << "FFT x"  << Repeats << ": " << timerFFT.value() << "s\n";
+}
+
 static void test_fft_real_input_golden() {
   Tensor<float, 1, ColMajor> input(5);
   input(0) = 1.0;
@@ -181,7 +215,7 @@ static void test_fft_real_input_energy() {
   Eigen::DSizes<ptrdiff_t, TensorRank> dimensions;
   ptrdiff_t total_size = 1;
   for (int i = 0; i < TensorRank; ++i) {
-    dimensions[i] = rand() % 20 + 1;
+    dimensions[i] = rand() % 20 + 3;
     total_size *= dimensions[i];
   }
   const DSizes<ptrdiff_t, TensorRank> arr = dimensions;
@@ -205,9 +239,19 @@ static void test_fft_real_input_energy() {
     VERIFY_IS_EQUAL(output.dimension(i), input.dimension(i));
   }
 
+  //std::cout <<"input:";
+  //for (int i = 0; i < total_size; i++)
+  //        std::cout << input(i);
+  //std::cout <<"\n";
+
+  //std::cout <<"output:";
+  //for (int i = 0; i < total_size; i++)
+  //        std::cout << output(i);
+  //std::cout <<"\n";
+
   RealScalar energy_original = 0.0;
   RealScalar energy_after_fft = 0.0;
-
+  
   for (int i = 0; i < total_size; ++i) {
     energy_original += numext::abs2(input(i));
   }
@@ -301,4 +345,37 @@ EIGEN_DECLARE_TEST(cxx11_tensor_fft) {
 
     test_fft_non_power_of_2_round_trip<float>(7);
     test_fft_non_power_of_2_round_trip<double>(7);
+
+    bench_fft_large_input<1000,512,ColMajor, float, false,Eigen::BothParts, FFT_FORWARD,1> ();
+    bench_fft_large_input<1000,512,ColMajor, double, false,Eigen::BothParts, FFT_FORWARD,1> ();
+    bench_fft_large_input<1000,512,ColMajor, float, true,Eigen::BothParts, FFT_FORWARD,1> ();
+    bench_fft_large_input<1000,512,ColMajor, double, true,Eigen::BothParts, FFT_FORWARD,1> ();
+    bench_fft_large_input<1000,512,RowMajor, float, false,Eigen::BothParts, FFT_FORWARD,1> ();
+    bench_fft_large_input<1000,512,RowMajor, double, false,Eigen::BothParts, FFT_FORWARD,1> ();
+    bench_fft_large_input<1000,512,RowMajor, float, true,Eigen::BothParts, FFT_FORWARD,1> ();
+    bench_fft_large_input<1000,512,RowMajor, double, true,Eigen::BothParts, FFT_FORWARD,1> ();
+    bench_fft_large_input<1000,512,ColMajor, float, false,Eigen::BothParts, FFT_REVERSE,1> ();
+    bench_fft_large_input<1000,512,ColMajor, double, false,Eigen::BothParts, FFT_REVERSE,1> ();
+    bench_fft_large_input<1000,512,ColMajor, float, true,Eigen::BothParts, FFT_REVERSE,1> ();
+    bench_fft_large_input<1000,512,ColMajor, double, true,Eigen::BothParts, FFT_REVERSE,1> ();
+    bench_fft_large_input<1000,512,RowMajor, float, false,Eigen::BothParts, FFT_REVERSE,1> ();
+    bench_fft_large_input<1000,512,RowMajor, double, false,Eigen::BothParts, FFT_REVERSE,1> ();
+    bench_fft_large_input<1000,512,RowMajor, float, true,Eigen::BothParts, FFT_REVERSE,1> ();
+    bench_fft_large_input<1000,512,RowMajor, double, true,Eigen::BothParts, FFT_REVERSE,1> ();
+    bench_fft_large_input<1000,512,ColMajor, float, false,Eigen::RealPart, FFT_FORWARD,1> ();
+    bench_fft_large_input<1000,512,ColMajor, double, false,Eigen::RealPart, FFT_FORWARD,1> ();
+    bench_fft_large_input<1000,512,ColMajor, float, true,Eigen::RealPart, FFT_FORWARD,1> ();
+    bench_fft_large_input<1000,512,ColMajor, double, true,Eigen::RealPart, FFT_FORWARD,1> ();
+    bench_fft_large_input<1000,512,RowMajor, float, false,Eigen::RealPart, FFT_FORWARD,1> ();
+    bench_fft_large_input<1000,512,RowMajor, double, false,Eigen::RealPart, FFT_FORWARD,1> ();
+    bench_fft_large_input<1000,512,RowMajor, float, true,Eigen::RealPart, FFT_FORWARD,1> ();
+    bench_fft_large_input<1000,512,RowMajor, double, true,Eigen::RealPart, FFT_FORWARD,1> ();
+    bench_fft_large_input<1000,512,ColMajor, float, false,Eigen::RealPart, FFT_REVERSE,1> ();
+    bench_fft_large_input<1000,512,ColMajor, double, false,Eigen::RealPart, FFT_REVERSE,1> ();
+    bench_fft_large_input<1000,512,ColMajor, float, true,Eigen::RealPart, FFT_REVERSE,1> ();
+    bench_fft_large_input<1000,512,ColMajor, double, true,Eigen::RealPart, FFT_REVERSE,1> ();
+    bench_fft_large_input<1000,512,RowMajor, float, false,Eigen::RealPart, FFT_REVERSE,1> ();
+    bench_fft_large_input<1000,512,RowMajor, double, false,Eigen::RealPart, FFT_REVERSE,1> ();
+    bench_fft_large_input<1000,512,RowMajor, float, true,Eigen::RealPart, FFT_REVERSE,1> ();
+    bench_fft_large_input<1000,512,RowMajor, double, true,Eigen::RealPart, FFT_REVERSE,1> ();
 }
