@@ -20,14 +20,14 @@ struct matrix_scale_add_imp
 };
 
 }
+
 template<typename MatrixType>
 struct matrix_scale_add
 {
-  static void run(MatrixType& dest, const MatrixType& x, const typename MatrixType::Scalar& alpha)
-  {
-	  internal::matrix_scale_add_imp<typename MatrixType::Scalar, Index>::run(dest.size(),dest.data(),x.data(),alpha);
-  }
+	static void run(MatrixType& dest, const MatrixType& x, const typename MatrixType::Scalar& alpha)
+	{
+		internal::matrix_scale_add_imp<typename MatrixType::Scalar, Index>::run(dest.size(),dest.data(),x.data(),alpha);
+	}
 };
 }
-
 #endif
