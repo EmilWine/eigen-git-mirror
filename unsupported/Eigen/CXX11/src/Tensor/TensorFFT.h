@@ -10,6 +10,11 @@
 #ifndef EIGEN_CXX11_TENSOR_TENSOR_FFT_H
 #define EIGEN_CXX11_TENSOR_TENSOR_FFT_H
 
+// This code requires the ability to initialize arrays of constant
+// values directly inside a class.
+#if __cplusplus >= 201103L || EIGEN_COMP_MSVC >= 1900
+#include <unsupported/Eigen/FFT>
+
 namespace Eigen {
 
 /** \class TensorFFT
@@ -213,6 +218,7 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
 #endif
 
  private:
+  Eigen::FFT<RealScalar> fft_eigen;
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void evalToBuf(EvaluatorPointerType data) {
     const bool write_to_out = internal::is_same<OutputScalar, ComplexScalar>::value;
     ComplexScalar* buf = write_to_out ? (ComplexScalar*)data : (ComplexScalar*)m_device.allocate(sizeof(ComplexScalar) * m_size);
@@ -225,88 +231,37 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
       Index dim = m_fft[i];
       eigen_assert(dim >= 0 && dim < NumDims);
       Index line_len = m_dimensions[dim];
-      eigen_assert(line_len >= 1);
+      eigen_assert(line_len > 1);
       ComplexScalar* line_buf = (ComplexScalar*)m_device.allocate(sizeof(ComplexScalar) * line_len);
-      const bool is_power_of_two = isPowerOfTwo(line_len);
-      const Index good_composite = is_power_of_two ? 0 : findGoodComposite(line_len);
-      const Index log_len = is_power_of_two ? getLog2(line_len) : getLog2(good_composite);
-
-      ComplexScalar* a = is_power_of_two ? NULL : (ComplexScalar*)m_device.allocate(sizeof(ComplexScalar) * good_composite);
-      ComplexScalar* b = is_power_of_two ? NULL : (ComplexScalar*)m_device.allocate(sizeof(ComplexScalar) * good_composite);
-      ComplexScalar* pos_j_base_powered = is_power_of_two ? NULL : (ComplexScalar*)m_device.allocate(sizeof(ComplexScalar) * (line_len + 1));
-      if (!is_power_of_two) {
-        // Compute twiddle factors
-        //   t_n = exp(sqrt(-1) * pi * n^2 / line_len)
-        // for n = 0, 1,..., line_len-1.
-        // For n > 2 we use the recurrence t_n = t_{n-1}^2 / t_{n-2} * t_1^2
-
-        // The recurrence is correct in exact arithmetic, but causes
-        // numerical issues for large transforms, especially in
-        // single-precision floating point.
-        //
-        // pos_j_base_powered[0] = ComplexScalar(1, 0);
-        // if (line_len > 1) {
-        //   const ComplexScalar pos_j_base = ComplexScalar(
-        //       numext::cos(M_PI / line_len), numext::sin(M_PI / line_len));
-        //   pos_j_base_powered[1] = pos_j_base;
-        //   if (line_len > 2) {
-        //     const ComplexScalar pos_j_base_sq = pos_j_base * pos_j_base;
-        //     for (int i = 2; i < line_len + 1; ++i) {
-        //       pos_j_base_powered[i] = pos_j_base_powered[i - 1] *
-        //           pos_j_base_powered[i - 1] /
-        //           pos_j_base_powered[i - 2] *
-        //           pos_j_base_sq;
-        //     }
-        //   }
-        // }
-        // TODO(rmlarsen): Find a way to use Eigen's vectorized sin
-        // and cosine functions here.
-        for (int j = 0; j < line_len + 1; ++j) {
-          double arg = ((EIGEN_PI * j) * j) / line_len;
-          std::complex<double> tmp(numext::cos(arg), numext::sin(arg));
-          pos_j_base_powered[j] = static_cast<ComplexScalar>(tmp);
-        }
-      }
+      ComplexScalar* temp_buf = (ComplexScalar*)m_device.allocate(sizeof(ComplexScalar) * line_len);
 
       for (Index partial_index = 0; partial_index < m_size / line_len; ++partial_index) {
         const Index base_offset = getBaseOffsetFromIndex(partial_index, dim);
 
-        // get data into line_buf
         const Index stride = m_strides[dim];
-        if (stride == 1) {
-          m_device.memcpy(line_buf, &buf[base_offset], line_len*sizeof(ComplexScalar));
-        } else {
-          Index offset = base_offset;
-          for (int j = 0; j < line_len; ++j, offset += stride) {
-            line_buf[j] = buf[offset];
-          }
-        }
+	
+	if (stride == 1) 
+	{
+		memcpy(line_buf, &buf[base_offset], line_len*sizeof(ComplexScalar));
+		(FFTDir == FFT_FORWARD)? 
+			fft_eigen.fwd(&buf[base_offset],line_buf,line_len): 
+			fft_eigen.inv(&buf[base_offset],line_buf,line_len);
+	}else{
+		Index offset = base_offset;
+		for (int j = 0; j < line_len; ++j, offset += stride)
+			line_buf[j] = buf[offset];
 
-        // process the line
-        if (is_power_of_two) {
-          processDataLineCooleyTukey(line_buf, line_len, log_len);
-        }
-        else {
-          processDataLineBluestein(line_buf, line_len, good_composite, log_len, a, b, pos_j_base_powered);
-        }
+		(FFTDir == FFT_FORWARD) ? 
+			fft_eigen.fwd(temp_buf,line_buf,line_len): 
+			fft_eigen.inv(temp_buf,line_buf,line_len);
 
-        // write back
-        if (FFTDir == FFT_FORWARD && stride == 1) {
-          m_device.memcpy(&buf[base_offset], line_buf, line_len*sizeof(ComplexScalar));
-        } else {
-          Index offset = base_offset;
-          const ComplexScalar div_factor =  ComplexScalar(1.0 / line_len, 0);
-          for (int j = 0; j < line_len; ++j, offset += stride) {
-             buf[offset] = (FFTDir == FFT_FORWARD) ? line_buf[j] : line_buf[j] * div_factor;
-          }
-        }
+		offset = base_offset;
+		for (int j = 0 ; j < line_len; ++j, offset += stride)
+			buf[offset] = temp_buf[j];
+	}
       }
       m_device.deallocate(line_buf);
-      if (!is_power_of_two) {
-        m_device.deallocate(a);
-        m_device.deallocate(b);
-        m_device.deallocate(pos_j_base_powered);
-      }
+      m_device.deallocate(temp_buf);
     }
 
     if(!write_to_out) {
@@ -316,6 +271,12 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
       m_device.deallocate(buf);
     }
   }
+
+  //TODO: Add In-Place capability
+  //TODO: Remove PRESERVE_INPUT FLAG
+  //TODO: Cache plans
+  //TODO: Use FFTW
+  //TODO: Use FFT2D for 2d+ tensors
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE static bool isPowerOfTwo(Index x) {
     eigen_assert(x > 0);
@@ -665,5 +626,8 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
 };
 
 }  // end namespace Eigen
+
+#endif  // EIGEN_HAS_CONSTEXPR
+
 
 #endif  // EIGEN_CXX11_TENSOR_TENSOR_FFT_H
