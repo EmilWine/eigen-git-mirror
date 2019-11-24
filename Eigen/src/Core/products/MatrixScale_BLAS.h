@@ -2,6 +2,7 @@
 #define EIGEN_MATRIX_SCALE_BLAS_H
 
 namespace Eigen { 
+namespace internal {
 
 #define EIGEN_BLAS_AXPY_SPECIALIZATION(EIGTYPE,BLASTYPE,BLASFUNC) \
 template<typename Index>\
@@ -26,5 +27,6 @@ EIGEN_BLAS_AXPY_SPECIALIZATION(scomplex, scomplex, caxpy_)
 EIGEN_BLAS_AXPY_SPECIALIZATION(dcomplex, dcomplex, zaxpy_)
 #endif
 
+}
 }
 #endif
