@@ -21,13 +21,13 @@ struct matrix_scale_add_imp
 
 }
 
-template<typename MatrixType>
+template<typename MatrixType, typename OtherType>
 struct matrix_scale_add
 {
-	static void run(MatrixType& dest, const MatrixType& x, const typename MatrixType::Scalar& alpha)
+	typedef typename Product<MatrixType,OtherType>::Scalar Scalar;
+	static void run(MatrixType& dest, OtherType& x, const Scalar& alpha)
 	{
-		internal::matrix_scale_add_imp<typename MatrixType::Scalar, Index>::run(dest.size(),dest.data(),x.data(),alpha);
-		asfasf
+		internal::matrix_scale_add_imp<Scalar, Index>::run(dest.size(),dest.data(),x.data(),alpha);
 	}
 };
 }
