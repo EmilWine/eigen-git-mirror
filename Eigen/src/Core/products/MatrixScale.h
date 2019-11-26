@@ -10,24 +10,23 @@ struct matrix_scale_add_imp;
 template<typename Scalar, typename Index>
 struct matrix_scale_add_imp
 {
-	static void run(Index size, Scalar *dest, const Scalar *in, const Scalar alpha){
+	static void run(Index size, Scalar *dest, const Scalar alpha){
+
 		typedef Map<Matrix<Scalar,Dynamic,1> > ResMap;
-		typedef Map<const Matrix<Scalar,Dynamic,1> > OtherMap;
 		ResMap dest_map = ResMap(dest, size);
-		OtherMap in_map = OtherMap(in, size);
-		dest_map = alpha*in_map +dest_map; 
+		dest_map = alpha*dest_map; 
 	}
 };
 
 }
 
-template<typename MatrixType, typename OtherType>
+template<typename MatrixType>
 struct matrix_scale_add
 {
-	typedef typename Product<MatrixType,OtherType>::Scalar Scalar;
-	static void run(MatrixType& dest, OtherType& x, const Scalar& alpha)
+	typedef typename MatrixType::Scalar Scalar;
+	static void run(MatrixType& dest, const Scalar& alpha)
 	{
-		internal::matrix_scale_add_imp<Scalar, Index>::run(dest.size(),dest.data(),x.data(),alpha);
+		internal::matrix_scale_add_imp<Scalar, Index>::run(dest.size(),dest.data(),alpha);
 	}
 };
 }
