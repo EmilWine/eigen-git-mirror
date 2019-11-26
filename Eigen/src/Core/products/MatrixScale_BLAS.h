@@ -9,22 +9,22 @@ template<typename Index>\
 struct matrix_scale_add_imp<EIGTYPE,Index>\
 { \
 	typedef EIGTYPE Scalar; \
-	static void run(Index size, Scalar *dest, const Scalar *in, const Scalar alpha){ \
+	static void run(Index size, Scalar *dest, const Scalar alpha){ \
 		BlasIndex n = internal::convert_index<BlasIndex>(size), incx=1, incy=1; \
-		BLASFUNC(&n, (const BLASTYPE*)&numext::real_ref(alpha) ,(const BLASTYPE*) in, &incx, (BLASTYPE*)dest, &incy); \
+		BLASFUNC(&n, (const BLASTYPE*)&numext::real_ref(alpha) ,(BLASTYPE*) dest, &incx); \
 	} \
 }; \
 
 #ifdef EIGEN_USE_MKL
-EIGEN_BLAS_AXPY_SPECIALIZATION(float, float, saxpy)
-EIGEN_BLAS_AXPY_SPECIALIZATION(double, double, daxpy)
-EIGEN_BLAS_AXPY_SPECIALIZATION(scomplex, MKL_Complex8, caxpy)
-EIGEN_BLAS_AXPY_SPECIALIZATION(dcomplex, MKL_Complex16, zaxpy)
+EIGEN_BLAS_AXPY_SPECIALIZATION(float, float, sscal)
+EIGEN_BLAS_AXPY_SPECIALIZATION(double, double, dscal)
+EIGEN_BLAS_AXPY_SPECIALIZATION(scomplex, MKL_Complex8, cscal)
+EIGEN_BLAS_AXPY_SPECIALIZATION(dcomplex, MKL_Complex16, zscal)
 #else
-EIGEN_BLAS_AXPY_SPECIALIZATION(float, float, saxpy_)
-EIGEN_BLAS_AXPY_SPECIALIZATION(double, double, daxpy_)
-EIGEN_BLAS_AXPY_SPECIALIZATION(scomplex, scomplex, caxpy_)
-EIGEN_BLAS_AXPY_SPECIALIZATION(dcomplex, dcomplex, zaxpy_)
+EIGEN_BLAS_AXPY_SPECIALIZATION(float, float, sscal_)
+EIGEN_BLAS_AXPY_SPECIALIZATION(double, double, dscal_)
+EIGEN_BLAS_AXPY_SPECIALIZATION(scomplex, scomplex, cscal_)
+EIGEN_BLAS_AXPY_SPECIALIZATION(dcomplex, dcomplex, zscal_)
 #endif
 
 }
