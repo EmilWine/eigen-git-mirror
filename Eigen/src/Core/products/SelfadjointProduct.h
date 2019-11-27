@@ -44,7 +44,7 @@ struct selfadjoint_rank1_update<Scalar,Index,RowMajor,UpLo,ConjLhs,ConjRhs>
   }
 };
 
-template<typename MatrixType, typename OtherType, int UpLo, bool OtherIsVector>
+template<typename MatrixType, typename OtherType, int UpLo, bool OtherIsVector = OtherType::IsVectorAtCompileTime>
 struct selfadjoint_product_selector;
 
 template<typename MatrixType, typename OtherType, int UpLo>
@@ -124,14 +124,8 @@ template<typename DerivedU>
 EIGEN_DEVICE_FUNC SelfAdjointView<MatrixType,UpLo>& SelfAdjointView<MatrixType,UpLo>
 ::rankUpdate(const MatrixBase<DerivedU>& u, const Scalar& alpha)
 {
-	if (u.cols() == 1 || u.rows() == 1){
-		selfadjoint_product_selector<MatrixType,DerivedU,UpLo,true>::run(_expression().const_cast_derived(), u.derived(), alpha);
-	}
-	else{
-		selfadjoint_product_selector<MatrixType,DerivedU,UpLo,false>::run(_expression().const_cast_derived(), u.derived(), alpha);
-	}
-
-  return *this;
+	selfadjoint_product_selector<MatrixType,DerivedU,UpLo,DerivedU::IsVectorAtCompileTime>::run(_expression().const_cast_derived(), u.derived(), alpha);
+	return *this;
 }
 
 } // end namespace Eigen
