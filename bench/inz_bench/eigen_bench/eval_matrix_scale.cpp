@@ -20,7 +20,7 @@ int main()
 	MAT_CLASS a;
 
 	
-	a.setZero(2,2);
+	a.setOnes(2,2);
 
 	MatrixMap ma(a.data(),N,N);
 	
