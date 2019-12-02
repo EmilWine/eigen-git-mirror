@@ -83,7 +83,11 @@ struct selfadjoint_product_selector<MatrixType,OtherType,UpLo,true>
 template<typename MatrixType, typename OtherType, int UpLo>
 struct selfadjoint_product_selector<MatrixType,OtherType,UpLo,false>
 {
-  static void run(MatrixType& mat, const OtherType& other, const typename MatrixType::Scalar& alpha)
+  static void run(MatrixType& mat, const OtherType& other, const typename MatrixType::Scalar& alpha){
+	  run(mat, other, alpha,1.0);
+  }
+  static void run(MatrixType& mat, const OtherType& other, const typename MatrixType::Scalar& alpha, 
+		  const typename MatrixType::Scalar& beta)
   {
     typedef typename MatrixType::Scalar Scalar;
     typedef internal::blas_traits<OtherType> OtherBlasTraits;
@@ -92,6 +96,7 @@ struct selfadjoint_product_selector<MatrixType,OtherType,UpLo,false>
     typename internal::add_const_on_value_type<ActualOtherType>::type actualOther = OtherBlasTraits::extract(other.derived());
 
     Scalar actualAlpha = alpha * OtherBlasTraits::extractScalarFactor(other.derived());
+    Scalar actualBeta = beta * OtherBlasTraits::extractScalarFactor(other.derived());
 
     enum {
       IsRowMajor = (internal::traits<MatrixType>::Flags&RowMajorBit) ? 1 : 0,
@@ -113,7 +118,7 @@ struct selfadjoint_product_selector<MatrixType,OtherType,UpLo,false>
       IsRowMajor ? RowMajor : ColMajor, MatrixType::InnerStrideAtCompileTime, UpLo>
       ::run(size, depth,
             &actualOther.coeffRef(0,0), actualOther.outerStride(), &actualOther.coeffRef(0,0), actualOther.outerStride(),
-            mat.data(), mat.innerStride(), mat.outerStride(), actualAlpha, blocking);
+            mat.data(), mat.innerStride(), mat.outerStride(), actualAlpha, actualBeta, blocking);
   }
 };
 
@@ -130,8 +135,16 @@ EIGEN_DEVICE_FUNC SelfAdjointView<MatrixType,UpLo>& SelfAdjointView<MatrixType,U
 	else{
 		selfadjoint_product_selector<MatrixType,DerivedU,UpLo,false>::run(_expression().const_cast_derived(), u.derived(), alpha);
 	}
-
   return *this;
+}
+
+template<typename MatrixType, unsigned int UpLo>
+template<typename DerivedU>
+EIGEN_DEVICE_FUNC SelfAdjointView<MatrixType,UpLo>& SelfAdjointView<MatrixType,UpLo>
+::rankUpdate(const MatrixBase<DerivedU>& u, const Scalar& alpha, const Scalar& beta)
+{
+	selfadjoint_product_selector<MatrixType,DerivedU,UpLo,false>::run(_expression().const_cast_derived(), u.derived(), alpha, beta);
+	return *this;
 }
 
 } // end namespace Eigen

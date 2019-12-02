@@ -9,7 +9,7 @@ template<typename Index>\
 struct matrix_scale_add_imp<EIGTYPE,Index>\
 { \
 	typedef EIGTYPE Scalar; \
-	static void run(Index size, Index stride, Scalar *dest, const Scalar alpha){ \
+	static void EIGEN_STRONG_INLINE run(Index size, Index stride, Scalar *dest, const Scalar alpha){ \
 		BlasIndex n = internal::convert_index<BlasIndex>(size), incx = internal::convert_index<BlasIndex>(stride); \
 		BLASFUNC(&n, (const BLASTYPE*)&numext::real_ref(alpha) ,(BLASTYPE*) dest, &incx); \
 	} \

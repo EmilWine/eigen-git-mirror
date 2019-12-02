@@ -8,7 +8,7 @@ using namespace Eigen;
 
 #define MAT_TYPE complex<float>
 #define N 2
-#define StorageOrder RowMajor
+#define StorageOrder ColMajor
 #define MAT_CLASS  Matrix< MAT_TYPE , Dynamic , Dynamic, StorageOrder>
 
 //typedef Eigen::Map<MAT_CLASS> MatrixMap;
@@ -19,7 +19,6 @@ int main()
 	float alpha = 0.9;
 	MAT_CLASS a;
 
-	
 	a.setOnes(2,2);
 
 	MatrixMap ma(a.data(),N,N);

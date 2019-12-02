@@ -15,27 +15,28 @@ using namespace Eigen;
 #define VEC_CLASS  Matrix< MAT_TYPE , N , Dynamic, StorageOrder>
 int main()
 {
-	float alpha = 1.0;
+	float alpha = 0.5;
+	float beta = 2;
 	MAT_CLASS a;
 	VEC_CLASS x,y;
 	
 	a.setOnes();
 	a.diagonal().setConstant(5);
 	//x.setRandom();
-	x = 3*MatrixXcf::Random(N,2);
+	x = 3*MatrixXcf::Ones(N,1);
 
 	//cout << "################ BEFORE ###############\n";
 	//cout  <<"A\n----\n" << a<< endl;
 	//cout << "X * X'\n----\n" << x * x.conjugate().transpose()<< endl;
 	//cout << "A + X * X'\n----\n" << a + x * x.conjugate().transpose() << endl;
 
-	//a.template selfadjointView<Lower>().rankUpdate(x,alpha);	
+	a.template selfadjointView<Lower>().rankUpdate(x,alpha,beta);	
 
 
 	//cout << "################ AFTER ###############\n";
-	//cout <<"A\n----\n" << a<< endl;
+	cout <<"A\n----\n" << a<< endl;
 
-	y = a.template selfadjointView<Lower>() * x;	
-	cout << y << endl;
+	//y = a.template selfadjointView<Lower>() * x;	
+	//cout << y << endl;
 }
 

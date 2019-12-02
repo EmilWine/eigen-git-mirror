@@ -50,17 +50,22 @@ template <typename Index, int LhsStorageOrder, bool ConjugateLhs, \
 struct general_matrix_matrix_triangular_product<Index,Scalar,LhsStorageOrder,ConjugateLhs, \
                Scalar,RhsStorageOrder,ConjugateRhs,ColMajor,1,UpLo,Specialized> { \
   static EIGEN_STRONG_INLINE void run(Index size, Index depth,const Scalar* lhs, Index lhsStride, \
-                          const Scalar* rhs, Index rhsStride, Scalar* res, Index resIncr, Index resStride, Scalar alpha, level3_blocking<Scalar, Scalar>& blocking) \
+                          const Scalar* rhs, Index rhsStride, Scalar* res, Index resIncr, Index resStride, Scalar alpha,level3_blocking<Scalar, Scalar>& blocking) \
+  { \
+	  run(size,depth,lhs, lhsStride,rhs,rhsStride,res,resIncr, resStride, alpha, 1.0, blocking);\
+  } \
+  static EIGEN_STRONG_INLINE void run(Index size, Index depth,const Scalar* lhs, Index lhsStride, \
+                          const Scalar* rhs, Index rhsStride, Scalar* res, Index resIncr, Index resStride, Scalar alpha,Scalar beta, level3_blocking<Scalar, Scalar>& blocking) \
   { \
     if ( lhs==rhs && ((UpLo&(Lower|Upper))==UpLo) ) { \
       general_matrix_matrix_rankupdate<Index,Scalar,LhsStorageOrder,ConjugateLhs,ColMajor,UpLo> \
-      ::run(size,depth,lhs,lhsStride,rhs,rhsStride,res,resStride,alpha,blocking); \
+      ::run(size,depth,lhs,lhsStride,rhs,rhsStride,res,resStride,alpha,beta,blocking); \
     } else { \
       general_matrix_matrix_triangular_product<Index, \
         Scalar, LhsStorageOrder, ConjugateLhs, \
         Scalar, RhsStorageOrder, ConjugateRhs, \
         ColMajor, 1, UpLo, BuiltIn> \
-      ::run(size,depth,lhs,lhsStride,rhs,rhsStride,res,resIncr,resStride,alpha,blocking); \
+      ::run(size,depth,lhs,lhsStride,rhs,rhsStride,res,resIncr,resStride,alpha,beta,blocking); \
     } \
   } \
 };
@@ -81,13 +86,18 @@ struct general_matrix_matrix_rankupdate<Index,EIGTYPE,AStorageOrder,ConjugateA,C
     conjA = ((AStorageOrder==ColMajor) && ConjugateA) ? 1 : 0 \
   }; \
   static EIGEN_STRONG_INLINE void run(Index size, Index depth,const EIGTYPE* lhs, Index lhsStride, \
-                          const EIGTYPE* /*rhs*/, Index /*rhsStride*/, EIGTYPE* res, Index resStride, EIGTYPE alpha, level3_blocking<EIGTYPE, EIGTYPE>& /*blocking*/) \
+                          const EIGTYPE* rhs, Index rhsStride, EIGTYPE* res, Index resStride, EIGTYPE alpha, level3_blocking<EIGTYPE, EIGTYPE>& blocking) \
+  { \
+    EIGTYPE beta = 1.0; \
+    run(size,depth, lhs,lhsStride, rhs, rhsStride ,res, resStride, alpha, beta, blocking); \
+  } \
+  static EIGEN_STRONG_INLINE void run(Index size, Index depth,const EIGTYPE* lhs, Index lhsStride, \
+                          const EIGTYPE* /*rhs*/, Index /*rhsStride*/, EIGTYPE* res, Index resStride, EIGTYPE alpha, EIGTYPE beta, level3_blocking<EIGTYPE, EIGTYPE>& /*blocking*/) \
   { \
   /* typedef Matrix<EIGTYPE, Dynamic, Dynamic, RhsStorageOrder> MatrixRhs;*/ \
 \
    BlasIndex lda=convert_index<BlasIndex>(lhsStride), ldc=convert_index<BlasIndex>(resStride), n=convert_index<BlasIndex>(size), k=convert_index<BlasIndex>(depth); \
    char uplo=((IsLower) ? 'L' : 'U'), trans=((AStorageOrder==RowMajor) ? 'T':'N'); \
-   EIGTYPE beta(1); \
    BLASFUNC(&uplo, &trans, &n, &k, (const BLASTYPE*)&numext::real_ref(alpha), lhs, &lda, (const BLASTYPE*)&numext::real_ref(beta), res, &ldc); \
   } \
 };
@@ -102,7 +112,13 @@ struct general_matrix_matrix_rankupdate<Index,EIGTYPE,AStorageOrder,ConjugateA,C
     conjA = (((AStorageOrder==ColMajor) && ConjugateA) || ((AStorageOrder==RowMajor) && !ConjugateA)) ? 1 : 0 \
   }; \
   static EIGEN_STRONG_INLINE void run(Index size, Index depth,const EIGTYPE* lhs, Index lhsStride, \
-                          const EIGTYPE* /*rhs*/, Index /*rhsStride*/, EIGTYPE* res, Index resStride, EIGTYPE alpha, level3_blocking<EIGTYPE, EIGTYPE>& /*blocking*/) \
+                          const EIGTYPE* rhs, Index rhsStride, EIGTYPE* res, Index resStride, EIGTYPE alpha, level3_blocking<EIGTYPE, EIGTYPE>& blocking) \
+  { \
+    EIGTYPE beta = 1.0; \
+    run(size,depth, lhs,lhsStride,rhs,rhsStride,res, resStride, alpha, beta, blocking); \
+  } \
+  static EIGEN_STRONG_INLINE void run(Index size, Index depth,const EIGTYPE* lhs, Index lhsStride, \
+                          const EIGTYPE* /*rhs*/, Index /*rhsStride*/, EIGTYPE* res, Index resStride, EIGTYPE alpha, EIGTYPE beta, level3_blocking<EIGTYPE, EIGTYPE>& /*blocking*/) \
   { \
    typedef Matrix<EIGTYPE, Dynamic, Dynamic, AStorageOrder> MatrixType; \
 \
@@ -112,7 +128,7 @@ struct general_matrix_matrix_rankupdate<Index,EIGTYPE,AStorageOrder,ConjugateA,C
    const EIGTYPE* a_ptr; \
 \
    alpha_ = alpha.real(); \
-   beta_ = 1.0; \
+   beta_ = beta.real(); \
 /* Copy with conjugation in some cases*/ \
    MatrixType a; \
    if (conjA) { \

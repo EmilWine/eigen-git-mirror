@@ -42,15 +42,23 @@ template <typename Index, typename LhsScalar, int LhsStorageOrder, bool Conjugat
 struct general_matrix_matrix_triangular_product<Index,LhsScalar,LhsStorageOrder,ConjugateLhs,RhsScalar,RhsStorageOrder,ConjugateRhs,RowMajor,ResInnerStride,UpLo,Version>
 {
   typedef typename ScalarBinaryOpTraits<LhsScalar, RhsScalar>::ReturnType ResScalar;
+  static EIGEN_STRONG_INLINE void run(Index size, Index depth,const LhsScalar* _lhs, Index lhsStride,
+                                      const RhsScalar* _rhs, Index rhsStride,
+                                      ResScalar* _res, Index resIncr, Index resStride,
+                                      const ResScalar& alpha,  level3_blocking<LhsScalar,RhsScalar>& blocking)
+  {
+	  run(size,depth,_lhs,lhsStride, _rhs, rhsStride, _res,resIncr, resStride, alpha, 1.0,blocking);
+
+  }
   static EIGEN_STRONG_INLINE void run(Index size, Index depth,const LhsScalar* lhs, Index lhsStride,
                                       const RhsScalar* rhs, Index rhsStride, ResScalar* res, Index resIncr, Index resStride,
-                                      const ResScalar& alpha, level3_blocking<RhsScalar,LhsScalar>& blocking)
+                                      const ResScalar& alpha, const ResScalar& beta, level3_blocking<RhsScalar,LhsScalar>& blocking)
   {
     general_matrix_matrix_triangular_product<Index,
         RhsScalar, RhsStorageOrder==RowMajor ? ColMajor : RowMajor, ConjugateRhs,
         LhsScalar, LhsStorageOrder==RowMajor ? ColMajor : RowMajor, ConjugateLhs,
         ColMajor, ResInnerStride, UpLo==Lower?Upper:Lower>
-      ::run(size,depth,rhs,rhsStride,lhs,lhsStride,res,resIncr,resStride,alpha,blocking);
+      ::run(size,depth,rhs,rhsStride,lhs,lhsStride,res,resIncr,resStride,alpha,beta, blocking);
   }
 };
 
@@ -64,6 +72,14 @@ struct general_matrix_matrix_triangular_product<Index,LhsScalar,LhsStorageOrder,
                                       const RhsScalar* _rhs, Index rhsStride,
                                       ResScalar* _res, Index resIncr, Index resStride,
                                       const ResScalar& alpha, level3_blocking<LhsScalar,RhsScalar>& blocking)
+  {
+	  run(size,depth,_lhs,lhsStride, _rhs, rhsStride, _res,resIncr, resStride, alpha, 1.0,blocking);
+
+  }
+  static EIGEN_STRONG_INLINE void run(Index size, Index depth,const LhsScalar* _lhs, Index lhsStride,
+                                      const RhsScalar* _rhs, Index rhsStride,
+                                      ResScalar* _res, Index resIncr, Index resStride,
+                                      const ResScalar& alpha, const ResScalar& beta, level3_blocking<LhsScalar,RhsScalar>& blocking)
   {
     typedef gebp_traits<LhsScalar,RhsScalar> Traits;
 
