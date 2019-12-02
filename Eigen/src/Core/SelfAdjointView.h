@@ -168,6 +168,9 @@ template<typename _MatrixType, unsigned int UpLo> class SelfAdjointView
     EIGEN_DEVICE_FUNC
     SelfAdjointView& rankUpdate(const MatrixBase<DerivedU>& u, const Scalar& alpha = Scalar(1));
 
+    template<typename DerivedU>
+    EIGEN_DEVICE_FUNC
+    SelfAdjointView& rankUpdate(const MatrixBase<DerivedU>& u, const Scalar& alpha, const Scalar& beta);
     /** \returns an expression of a triangular view extracted from the current selfadjoint view of a given triangular part
       *
       * The parameter \a TriMode can have the following values: \c #Upper, \c #StrictlyUpper, \c #UnitUpper,
