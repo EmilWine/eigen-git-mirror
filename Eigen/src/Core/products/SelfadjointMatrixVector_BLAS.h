@@ -68,9 +68,10 @@ template<typename Index, int StorageOrder, int UpLo, bool ConjugateLhs, bool Con
 struct selfadjoint_matrix_vector_product_symv<EIGTYPE,Index,StorageOrder,UpLo,ConjugateLhs,ConjugateRhs> \
 { \
 typedef Matrix<EIGTYPE,Dynamic,1,ColMajor> SYMVVector;\
+typedef Matrix<EIGTYPE, Dynamic, Dynamic, StorageOrder> SYMVMatrix; \
 \
 static void run( \
-Index size, const EIGTYPE*  lhs, Index lhsStride, \
+Index size, const EIGTYPE*  _lhs, Index lhsStride, \
 const EIGTYPE* _rhs, EIGTYPE* res, EIGTYPE alpha) \
 { \
   enum {\
@@ -79,15 +80,22 @@ const EIGTYPE* _rhs, EIGTYPE* res, EIGTYPE alpha) \
   }; \
   BlasIndex n=convert_index<BlasIndex>(size), lda=convert_index<BlasIndex>(lhsStride), incx=1, incy=1; \
   EIGTYPE beta(1); \
-  const EIGTYPE *x_ptr; \
+  const EIGTYPE *a, *b; \
+  SYMVMatrix a_tmp; \
   char uplo=(IsRowMajor) ? (IsLower ? 'U' : 'L') : (IsLower ? 'L' : 'U'); \
+  if (((StorageOrder==ColMajor) && ConjugateLhs) || ((StorageOrder==RowMajor) && (!ConjugateLhs))) { \
+    Map<const Matrix<EIGTYPE, Dynamic, Dynamic, StorageOrder>, 0, OuterStride<> > lhs(_lhs,size,size,OuterStride<>(lhsStride)); \
+    a_tmp = lhs.conjugate(); \
+    a = a_tmp.data(); \
+    lda = convert_index<BlasIndex>(a_tmp.outerStride()); \
+  } else a = _lhs; \
   SYMVVector x_tmp; \
   if (ConjugateRhs) { \
     Map<const SYMVVector, 0 > map_x(_rhs,size,1); \
     x_tmp=map_x.conjugate(); \
-    x_ptr=x_tmp.data(); \
-  } else x_ptr=_rhs; \
-  BLASFUNC(&uplo, &n, (const BLASTYPE*)&numext::real_ref(alpha), (const BLASTYPE*)lhs, &lda, (const BLASTYPE*)x_ptr, &incx, (const BLASTYPE*)&numext::real_ref(beta), (BLASTYPE*)res, &incy); \
+    b=x_tmp.data(); \
+  } else b=_rhs; \
+  BLASFUNC(&uplo, &n, (const BLASTYPE*)&numext::real_ref(alpha), (const BLASTYPE*)a, &lda, (const BLASTYPE*)b, &incx, (const BLASTYPE*)&numext::real_ref(beta), (BLASTYPE*)res, &incy); \
 }\
 };
 
